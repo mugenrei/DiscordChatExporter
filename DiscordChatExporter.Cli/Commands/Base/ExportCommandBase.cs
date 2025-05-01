@@ -89,6 +89,31 @@ public abstract class ExportCommandBase : DiscordCommandBase
     )]
     public bool ShouldDownloadAssets { get; init; }
 
+    [CommandOption("no-emoji", Description = "Skip downloading emoji images when using --media.")]
+    public bool ShouldSkipEmoji { get; init; } = false;
+
+    [CommandOption(
+        "no-user-avatar",
+        Description = "Skip downloading user avatars when using --media."
+    )]
+    public bool ShouldSkipUserAvatars { get; init; } = false;
+
+    [CommandOption("no-sticker", Description = "Skip downloading stickers when using --media.")]
+    public bool ShouldSkipStickers { get; init; } = false;
+
+    [CommandOption(
+        "no-external",
+        Description = "Skip downloading all external URLs (like tenor gifs) when using --media."
+    )]
+    public bool ShouldSkipExternal { get; init; } = false;
+
+    [CommandOption(
+        "filter-external",
+        Description = "Skip downloading external URLs containing specific patterns when using --media. "
+            + "Can be specified multiple times, e.g. --filter-external tenor --filter-external giphy"
+    )]
+    public IReadOnlyList<string> ExternalFilters { get; init; } = Array.Empty<string>();
+
     [CommandOption(
         "reuse-media",
         Description = "Reuse previously downloaded assets to avoid redundant requests."
@@ -127,15 +152,6 @@ public abstract class ExportCommandBase : DiscordCommandBase
     [CommandOption("utc", Description = "Normalize all timestamps to UTC+0.")]
     public bool IsUtcNormalizationEnabled { get; init; } = false;
 
-    [CommandOption(
-        "fuck-russia",
-        EnvironmentVariable = "FUCK_RUSSIA",
-        Description = "Don't print the Support Ukraine message to the console.",
-        // Use a converter to accept '1' as 'true' to reuse the existing environment variable
-        Converter = typeof(TruthyBooleanBindingConverter)
-    )]
-    public bool IsUkraineSupportMessageDisabled { get; init; } = false;
-
     private ChannelExporter? _channelExporter;
     protected ChannelExporter Exporter => _channelExporter ??= new ChannelExporter(Discord);
 
@@ -152,6 +168,36 @@ public abstract class ExportCommandBase : DiscordCommandBase
         if (!string.IsNullOrWhiteSpace(AssetsDirPath) && !ShouldDownloadAssets)
         {
             throw new CommandException("Option --media-dir cannot be used without --media.");
+        }
+
+        // Skip emoji can only be enabled if the download assets option is set
+        if (ShouldSkipEmoji && !ShouldDownloadAssets)
+        {
+            throw new CommandException("Option --no-emoji cannot be used without --media.");
+        }
+
+        // Skip user avatars can only be enabled if the download assets option is set
+        if (ShouldSkipUserAvatars && !ShouldDownloadAssets)
+        {
+            throw new CommandException("Option --no-user-avatar cannot be used without --media.");
+        }
+
+        // Skip stickers can only be enabled if the download assets option is set
+        if (ShouldSkipStickers && !ShouldDownloadAssets)
+        {
+            throw new CommandException("Option --no-sticker cannot be used without --media.");
+        }
+
+        // Skip external URLs can only be enabled if the download assets option is set
+        if (ShouldSkipExternal && !ShouldDownloadAssets)
+        {
+            throw new CommandException("Option --no-external cannot be used without --media.");
+        }
+
+        // External filters can only be specified if the download assets option is set
+        if (ExternalFilters.Count > 0 && !ShouldDownloadAssets)
+        {
+            throw new CommandException("Option --filter-external cannot be used without --media.");
         }
 
         // Make sure the user does not try to export multiple channels into one file.
@@ -223,6 +269,11 @@ public abstract class ExportCommandBase : DiscordCommandBase
                                         MessageFilter,
                                         ShouldFormatMarkdown,
                                         ShouldDownloadAssets,
+                                        ShouldSkipEmoji,
+                                        ShouldSkipUserAvatars,
+                                        ShouldSkipStickers,
+                                        ShouldSkipExternal,
+                                        ExternalFilters,
                                         ShouldReuseAssets,
                                         Locale,
                                         IsUtcNormalizationEnabled
@@ -320,39 +371,6 @@ public abstract class ExportCommandBase : DiscordCommandBase
 
     public override async ValueTask ExecuteAsync(IConsole console)
     {
-        // Support Ukraine callout
-        if (!IsUkraineSupportMessageDisabled)
-        {
-            console.Output.WriteLine(
-                "┌────────────────────────────────────────────────────────────────────┐"
-            );
-            console.Output.WriteLine(
-                "│   Thank you for supporting Ukraine <3                              │"
-            );
-            console.Output.WriteLine(
-                "│                                                                    │"
-            );
-            console.Output.WriteLine(
-                "│   As Russia wages a genocidal war against my country,              │"
-            );
-            console.Output.WriteLine(
-                "│   I'm grateful to everyone who continues to                        │"
-            );
-            console.Output.WriteLine(
-                "│   stand with Ukraine in our fight for freedom.                     │"
-            );
-            console.Output.WriteLine(
-                "│                                                                    │"
-            );
-            console.Output.WriteLine(
-                "│   Learn more: https://tyrrrz.me/ukraine                            │"
-            );
-            console.Output.WriteLine(
-                "└────────────────────────────────────────────────────────────────────┘"
-            );
-            console.Output.WriteLine("");
-        }
-
         await base.ExecuteAsync(console);
     }
 }
