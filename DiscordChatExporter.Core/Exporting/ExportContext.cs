@@ -112,6 +112,26 @@ internal class ExportContext(DiscordClient discord, ExportRequest request)
         if (!Request.ShouldDownloadAssets)
             return url;
 
+        // Skip emoji assets if the flag is set
+        if (Request.ShouldSkipEmoji && IsEmojiUrl(url))
+            return url;
+
+        // Skip user avatar assets if the flag is set
+        if (Request.ShouldSkipUserAvatars && IsUserAvatarUrl(url))
+            return url;
+
+        // Skip sticker assets if the flag is set
+        if (Request.ShouldSkipStickers && IsStickerUrl(url))
+            return url;
+
+        // Skip all external assets if the flag is set
+        if (Request.ShouldSkipExternal && IsExternalUrl(url))
+            return url;
+
+        // Skip external assets that match the filters
+        if (Request.ExternalFilters.Count > 0 && MatchesExternalFilter(url))
+            return url;
+
         try
         {
             var filePath = await _assetDownloader.DownloadAsync(url, cancellationToken);
@@ -146,5 +166,49 @@ internal class ExportContext(DiscordClient discord, ExportRequest request)
             // TODO: add logging so we can be more liberal with catching exceptions.
             return url;
         }
+    }
+
+    // Checks if the URL is for an emoji image
+    private static bool IsEmojiUrl(string url)
+    {
+        return url.Contains("/emojis/")
+            || url.Contains("emoji.gg")
+            || url.Contains("emoji-cdn")
+            || (url.EndsWith(".svg") && url.Contains("emoji"))
+            || url.Contains("twemoji")
+            || (url.Contains("discord") && url.Contains("emoji"));
+    }
+
+    // Checks if the URL is for a user avatar
+    private static bool IsUserAvatarUrl(string url)
+    {
+        return url.Contains("/avatars/") || (url.Contains("/users/") && url.Contains("avatar"));
+    }
+
+    // Checks if the URL is for a sticker image
+    private static bool IsStickerUrl(string url)
+    {
+        return url.Contains("/stickers/");
+    }
+
+    // Checks if the URL is from external sources
+    private static bool IsExternalUrl(string url)
+    {
+        return url.Contains("/external/");
+    }
+
+    // Checks if an external URL matches any of the filters
+    private bool MatchesExternalFilter(string url)
+    {
+        if (!IsExternalUrl(url))
+            return false;
+
+        foreach (var filter in Request.ExternalFilters)
+        {
+            if (url.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 }
