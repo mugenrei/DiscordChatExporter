@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -39,16 +38,6 @@ public partial class ExportRequest
 
     public bool ShouldDownloadAssets { get; }
 
-    public bool ShouldSkipEmoji { get; }
-
-    public bool ShouldSkipUserAvatars { get; }
-
-    public bool ShouldSkipStickers { get; }
-
-    public bool ShouldSkipExternal { get; }
-
-    public IReadOnlyList<string> ExternalFilters { get; }
-
     public bool ShouldReuseAssets { get; }
 
     public string? Locale { get; }
@@ -69,11 +58,6 @@ public partial class ExportRequest
         MessageFilter messageFilter,
         bool shouldFormatMarkdown,
         bool shouldDownloadAssets,
-        bool shouldSkipEmoji,
-        bool shouldSkipUserAvatars,
-        bool shouldSkipStickers,
-        bool shouldSkipExternal,
-        IReadOnlyList<string> externalFilters,
         bool shouldReuseAssets,
         string? locale,
         bool isUtcNormalizationEnabled
@@ -88,11 +72,6 @@ public partial class ExportRequest
         MessageFilter = messageFilter;
         ShouldFormatMarkdown = shouldFormatMarkdown;
         ShouldDownloadAssets = shouldDownloadAssets;
-        ShouldSkipEmoji = shouldSkipEmoji;
-        ShouldSkipUserAvatars = shouldSkipUserAvatars;
-        ShouldSkipStickers = shouldSkipStickers;
-        ShouldSkipExternal = shouldSkipExternal;
-        ExternalFilters = externalFilters;
         ShouldReuseAssets = shouldReuseAssets;
         Locale = locale;
         IsUtcNormalizationEnabled = isUtcNormalizationEnabled;
